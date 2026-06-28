@@ -476,3 +476,84 @@ select:focus {
 .budget-progress-bar.safe { background: var(--accent-green); }
 .budget-progress-bar.warning { background: var(--accent-orange); }
 .budget-progress-bar.danger { background: var(--accent-red); }
+
+/* Follow-up View Styles */
+.followup-grid {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 32px;
+}
+
+.friend-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  transition: transform 0.2s, background 0.2s;
+  margin-bottom: 12px;
+}
+
+.friend-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.friend-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.friend-name {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.friend-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.status-indicator {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-indicator.overdue {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--accent-red);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+}
+
+.status-indicator.due-today {
+  background: rgba(249, 115, 22, 0.15);
+  color: var(--accent-orange);
+}
+
+.status-indicator.safe {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent-green);
+}
+
+.btn-contacted {
+  background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-contacted:hover {
+  opacity: 0.9;
+}
