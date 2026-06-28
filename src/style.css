@@ -189,3 +189,58 @@ button:hover { opacity: 0.9; }
   width: 80px !important;
   text-align: right;
 }
+
+/* Gamification */
+.badge-excellent {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--accent-green), #059669);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 8px;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+  animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.card-glow {
+  box-shadow: 0 0 20px var(--accent-green), inset 0 0 10px rgba(16, 185, 129, 0.2) !important;
+  border-color: var(--accent-green) !important;
+  animation: glowPulse 2s infinite alternate;
+}
+
+@keyframes glowPulse {
+  from { box-shadow: 0 0 10px var(--accent-green); }
+  to { box-shadow: 0 0 25px var(--accent-green); }
+}
+
+.banner-flawless {
+  background: linear-gradient(90deg, #f59e0b, #ef4444, #9333ea, #06b6d4, #10b981);
+  background-size: 200% 200%;
+  color: white;
+  text-align: center;
+  padding: 16px;
+  font-size: 24px;
+  font-weight: 800;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  animation: rainbow 3s ease infinite, slideDown 0.5s ease-out forwards;
+}
+
+@keyframes rainbow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}

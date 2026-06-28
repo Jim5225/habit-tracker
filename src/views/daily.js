@@ -10,17 +10,24 @@ export async function renderDailyView(container) {
     const { data: checkHabits } = await supabase.from('checkbox_habits').select('*').eq('is_active', true).order('sort_order');
     const { data: checkLogs } = await supabase.from('checkbox_logs').select('*').eq('log_date', today);
 
+    let allTargetsMet = true;
+
     let pomoHtml = pomoHabits.map(habit => {
       const log = pomoLogs?.find(l => l.habit_id === habit.id) || { completed: 0 };
       const percent = Math.min(100, Math.round((log.completed / habit.daily_target) * 100));
+      
+      const isExcellent = log.completed >= habit.daily_target;
+      if (!isExcellent) allTargetsMet = false;
+      
       return `
-        <div class="card" style="text-align:center; border-top: 4px solid ${habit.color}">
+        <div class="card ${isExcellent ? 'card-glow' : ''}" style="text-align:center; border-top: 4px solid ${habit.color}; position:relative; overflow:hidden;">
           <h3>${habit.name}</h3>
           <div style="font-size:32px; font-weight:bold; margin: 16px 0;">${log.completed} / ${habit.daily_target}</div>
           <p style="color:var(--text-secondary); margin-bottom:16px;">${percent}% Daily Target</p>
           
-          <div class="input-group">
-            <label>Add Pomodoros</label>
+          ${isExcellent ? `<div class="badge-excellent">Excellent! 🎉</div>` : ''}
+          
+          <div class="input-group" style="margin-top: ${isExcellent ? '16px' : '0'};">
             <div style="display:flex; gap:8px; justify-content:center;">
               <button onclick="updatePomo('${habit.id}', ${log.completed - 1})" ${log.completed <= 0 ? 'disabled' : ''}>-</button>
               <input type="number" id="pomo-${habit.id}" value="1" min="1" max="10" style="width:60px; text-align:center;">
@@ -34,6 +41,8 @@ export async function renderDailyView(container) {
     let checkHtml = checkHabits.map(habit => {
       const log = checkLogs?.find(l => l.habit_id === habit.id) || { completed: false, value: 0 };
       const hasValueInput = habit.unit !== null;
+      
+      if (!log.completed) allTargetsMet = false; 
       
       return `
         <div class="checkbox-item" onclick="if(event.target.tagName !== 'INPUT') document.getElementById('chk-${habit.id}').click()">
@@ -52,8 +61,12 @@ export async function renderDailyView(container) {
       `;
     }).join('');
 
+    const isFlawless = pomoHabits.length > 0 && allTargetsMet;
+
     container.innerHTML = `
       <div class="view-container">
+        ${isFlawless ? `<div class="banner-flawless">Flawless Victory 🏆<br><span style="font-size:16px; font-weight:normal;">You hit all your targets for today!</span></div>` : ''}
+        
         <h1>Today's Progress</h1>
         <p class="subtitle">${format(new Date(), 'EEEE, MMMM do, yyyy')}</p>
         
@@ -86,6 +99,7 @@ export async function renderDailyView(container) {
         completed: isChecked,
         value: value ? parseFloat(value) : null
       }, { onConflict: 'habit_id,log_date' });
+      renderDailyView(container);
     };
 
   } catch (error) {
