@@ -435,18 +435,27 @@ button:hover { opacity: 0.9; }
 }
 
 select {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(30, 33, 43, 0.8);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
   padding: 10px 12px;
   border-radius: 8px;
   font-family: inherit;
   font-size: 16px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 select:focus {
   outline: none;
   border-color: var(--accent-cyan);
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.3);
+}
+
+select option {
+  background: #171923; /* Matching the dark sidebar background */
+  color: var(--text-primary);
+  padding: 12px;
 }
 
 .month-selector {
