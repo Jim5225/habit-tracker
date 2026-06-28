@@ -4,6 +4,7 @@ import { renderWeeklyView } from './views/weekly.js';
 import { renderMonthlyView } from './views/monthly.js';
 import { renderAnalyticsView } from './views/analytics.js';
 import { renderCalendarView } from './views/calendar.js';
+import { renderBudgetView } from './views/budget.js';
 
 const app = document.getElementById('app-view');
 const navLinks = document.querySelectorAll('.nav-links a');
@@ -33,6 +34,9 @@ function loadView(view) {
       break;
     case 'calendar':
       renderCalendarView(app);
+      break;
+    case 'budget':
+      renderBudgetView(app);
       break;
     default:
       renderDailyView(app);
