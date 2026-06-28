@@ -6,11 +6,8 @@ let charts = [];
 
 export async function renderBudgetView(container) {
   const today = new Date();
-  
-  // Track selected month, default to current month
   let selectedMonthStr = localStorage.getItem('budget_selected_month') || format(today, 'yyyy-MM');
   
-  // Available months (last 6 months) for dropdown selection
   const selectMonths = Array.from({ length: 6 }).map((_, i) => {
     const d = subMonths(today, i);
     return {
@@ -28,10 +25,15 @@ export async function renderBudgetView(container) {
     const { data: income } = await supabase.from('budget_income').select('*').gte('log_date', start).lte('log_date', end);
     const { data: expenses } = await supabase.from('budget_expenses').select('*').gte('log_date', start).lte('log_date', end);
 
+    // Fetch this month's budget limit
+    const { data: limitData } = await supabase.from('budget_limits').select('*').eq('month_str', selectedMonthStr);
+    const budgetLimit = limitData && limitData.length > 0 ? Number(limitData[0].limit_amount) : 0;
+
     // Calculate totals
     const totalIncome = income?.reduce((sum, item) => sum + Number(item.amount), 0) || 0;
     const totalExpenses = expenses?.reduce((sum, item) => sum + Number(item.amount), 0) || 0;
     const totalSavings = totalIncome - totalExpenses;
+    const remainingBudget = budgetLimit - totalExpenses;
 
     // Fetch last month's data for comparison
     const prevMonthDate = subMonths(selectedDate, 1);
@@ -62,10 +64,10 @@ export async function renderBudgetView(container) {
       });
     }
 
-    renderUI(totalIncome, totalExpenses, totalSavings, prevTotalSavings, income, expenses, historicalData);
+    renderUI(totalIncome, totalExpenses, totalSavings, prevTotalSavings, budgetLimit, remainingBudget, income, expenses, historicalData);
   }
 
-  function renderUI(totalIncome, totalExpenses, totalSavings, prevTotalSavings, income, expenses, historicalData) {
+  function renderUI(totalIncome, totalExpenses, totalSavings, prevTotalSavings, budgetLimit, remainingBudget, income, expenses, historicalData) {
     // Generate comparison text
     let savingsCompareText = '';
     if (prevTotalSavings === 0) {
@@ -78,7 +80,21 @@ export async function renderBudgetView(container) {
       savingsCompareText = `Your savings <span style="color:${color}; font-weight:bold;">${direction}d by ${Math.abs(pct)}%</span> ($${Math.abs(diff).toLocaleString()}) compared to last month.`;
     }
 
-    // Expense Categories list
+    // Progress bar details
+    const percentSpent = budgetLimit > 0 ? Math.min(100, Math.round((totalExpenses / budgetLimit) * 100)) : 0;
+    const progressClass = percentSpent >= 100 ? 'danger' : (percentSpent >= 80 ? 'warning' : 'safe');
+    
+    let limitStatusText = '';
+    if (budgetLimit > 0) {
+      if (remainingBudget >= 0) {
+        limitStatusText = `You have spent <strong>${percentSpent}%</strong> of your budget. <strong>$${remainingBudget.toLocaleString()}</strong> remaining.`;
+      } else {
+        limitStatusText = `<span style="color:var(--accent-red); font-weight:bold;">Budget Overdraft!</span> You went over budget by <strong>$${Math.abs(remainingBudget).toLocaleString()}</strong>.`;
+      }
+    } else {
+      limitStatusText = 'No budget limit set for this month yet. Set one below!';
+    }
+
     const expenseCategories = [
       'Home Rent',
       'Electricity bills',
@@ -120,9 +136,25 @@ export async function renderBudgetView(container) {
           </div>
         </div>
 
+        <!-- Budget Limit & Progress -->
+        <div class="card" style="margin-bottom: 24px;">
+          <h2>Monthly Limit Analysis</h2>
+          <p style="font-size:15px; margin-top:8px;">${limitStatusText}</p>
+          ${budgetLimit > 0 ? `
+            <div class="budget-progress-container">
+              <div class="budget-progress-bar ${progressClass}" style="width: ${percentSpent}%;"></div>
+            </div>
+          ` : ''}
+          <div style="display:flex; gap:12px; align-items:center; margin-top:16px;">
+            <label for="budget-limit-input" style="font-weight:600; font-size:14px;">Set/Adjust Limit ($): </label>
+            <input type="number" id="budget-limit-input" value="${budgetLimit || ''}" style="width:100px; padding:6px 10px; font-size:14px;" placeholder="e.g. 3000">
+            <button id="btn-save-limit" style="padding:6px 16px; font-size:14px;">Save Limit</button>
+          </div>
+        </div>
+
         <!-- Insights -->
         <div class="card" style="margin-bottom: 32px;">
-          <h2>Monthly Trends & Comparisons</h2>
+          <h2>Savings vs Last Month</h2>
           <p>${savingsCompareText}</p>
         </div>
 
@@ -229,14 +261,21 @@ export async function renderBudgetView(container) {
       </div>
     `;
 
-    // Dropdown change listener
     document.getElementById('budget-month-select').addEventListener('change', (e) => {
       selectedMonthStr = e.target.value;
       localStorage.setItem('budget_selected_month', selectedMonthStr);
       loadData();
     });
 
-    // Forms listeners
+    document.getElementById('btn-save-limit').addEventListener('click', async () => {
+      const limit = parseFloat(document.getElementById('budget-limit-input').value) || 0;
+      await supabase.from('budget_limits').upsert({
+        month_str: selectedMonthStr,
+        limit_amount: limit
+      }, { onConflict: 'month_str' });
+      loadData();
+    });
+
     document.getElementById('income-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const source = document.getElementById('inc-source').value;
@@ -257,7 +296,6 @@ export async function renderBudgetView(container) {
       loadData();
     });
 
-    // Expose delete helper
     window.deleteTransaction = async (type, id) => {
       const table = type === 'income' ? 'budget_income' : 'budget_expenses';
       await supabase.from(table).delete().eq('id', id);
@@ -268,11 +306,9 @@ export async function renderBudgetView(container) {
   }
 
   function renderCharts(historicalData, expenses) {
-    // Clear old charts
     charts.forEach(c => c.destroy());
     charts = [];
 
-    // --- 1. Bar Chart: Income vs Expense Trend ---
     const trendCtx = document.getElementById('budgetTrendChart').getContext('2d');
     charts.push(new Chart(trendCtx, {
       type: 'bar',
@@ -293,10 +329,7 @@ export async function renderBudgetView(container) {
       }
     }));
 
-    // --- 2. Doughnut Chart: Expenses breakdown by category ---
     const catCtx = document.getElementById('expenseCategoryChart').getContext('2d');
-    
-    // Group expense data by category
     const expenseDataMap = {};
     expenses?.forEach(exp => {
       expenseDataMap[exp.category] = (expenseDataMap[exp.category] || 0) + Number(exp.amount);
@@ -329,6 +362,5 @@ export async function renderBudgetView(container) {
     }));
   }
 
-  // Load initial dataset
   loadData();
 }
