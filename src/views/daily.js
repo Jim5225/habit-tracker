@@ -1,9 +1,30 @@
 import { supabase } from '../supabase.js';
-import { format } from 'date-fns';
+import { format, differenceInCalendarDays, parseISO } from 'date-fns';
 
 export async function renderDailyView(container) {
   const today = format(new Date(), 'yyyy-MM-dd');
   
+  // Set default prep dates if they don't exist
+  if (!localStorage.getItem('prep_start_date')) {
+    localStorage.setItem('prep_start_date', today);
+  }
+  if (!localStorage.getItem('prep_end_date')) {
+    localStorage.setItem('prep_end_date', '2026-12-31');
+  }
+
+  const prepStartDate = localStorage.getItem('prep_start_date');
+  const prepEndDate = localStorage.getItem('prep_end_date');
+
+  // Calculate countdown metrics
+  const todayDate = new Date();
+  const startDate = parseISO(prepStartDate);
+  const endDate = parseISO(prepEndDate);
+
+  const totalDays = Math.max(1, differenceInCalendarDays(endDate, startDate));
+  const daysElapsed = Math.max(0, differenceInCalendarDays(todayDate, startDate));
+  const daysRemaining = Math.max(0, differenceInCalendarDays(endDate, todayDate));
+  const percentElapsed = Math.min(100, Math.round((daysElapsed / totalDays) * 100));
+
   try {
     const { data: pomoHabits } = await supabase.from('pomo_habits').select('*').order('sort_order');
     const { data: pomoLogs } = await supabase.from('pomo_logs').select('*').eq('log_date', today);
@@ -67,8 +88,49 @@ export async function renderDailyView(container) {
       <div class="view-container">
         ${isFlawless ? `<div class="banner-flawless">Flawless Victory 🏆<br><span style="font-size:16px; font-weight:normal;">You hit all your targets for today!</span></div>` : ''}
         
-        <h1>Today's Progress</h1>
-        <p class="subtitle">${format(new Date(), 'EEEE, MMMM do, yyyy')}</p>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 24px;">
+          <div>
+            <h1>Today's Progress</h1>
+            <p class="subtitle" style="margin-bottom:0;">${format(new Date(), 'EEEE, MMMM do, yyyy')}</p>
+          </div>
+        </div>
+
+        <!-- Preparation Countdown Widget -->
+        <div class="card" style="margin-bottom: 32px; position: relative;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin-bottom: 0;">🎯 Preparation Countdown</h3>
+            <button id="btn-prep-toggle" style="padding: 4px 12px; font-size: 12px; background: rgba(255,255,255,0.08);">
+              ${window.showPrepSettings ? 'Cancel' : 'Reset Target'}
+            </button>
+          </div>
+          
+          ${window.showPrepSettings ? `
+            <div style="margin-top: 16px; display: flex; gap: 12px; align-items: flex-end; background: rgba(0,0,0,0.2); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                <label style="font-size:12px; margin-bottom: 4px;">Start Date</label>
+                <input type="date" id="prep-start-input" value="${prepStartDate}" style="padding: 6px; font-size: 14px; width: 100%;">
+              </div>
+              <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                <label style="font-size:12px; margin-bottom: 4px;">End Date</label>
+                <input type="date" id="prep-end-input" value="${prepEndDate}" style="padding: 6px; font-size: 14px; width: 100%;">
+              </div>
+              <button id="btn-prep-save" style="padding: 8px 16px; font-size: 14px; background: var(--accent-cyan);">Save</button>
+            </div>
+          ` : `
+            <div style="margin-top: 16px;">
+              <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px;">
+                <span><strong>${daysRemaining}</strong> days left</span>
+                <span style="color: var(--text-secondary);">${percentElapsed}% elapsed (${daysElapsed}/${totalDays} days)</span>
+              </div>
+              <div class="budget-progress-container" style="margin: 0; height: 12px; background: rgba(255, 255, 255, 0.05);">
+                <div class="budget-progress-bar safe" style="width: ${percentElapsed}%;"></div>
+              </div>
+              <div style="font-size: 11px; color: var(--text-secondary); margin-top: 6px; text-align: right;">
+                Target: ${format(parseISO(prepEndDate), 'MMMM d, yyyy')}
+              </div>
+            </div>
+          `}
+        </div>
         
         <h2>Pomodoro Habits</h2>
         <div class="grid-3" style="margin-bottom: 40px;">
@@ -81,6 +143,25 @@ export async function renderDailyView(container) {
         </div>
       </div>
     `;
+
+    // Hook up button events
+    document.getElementById('btn-prep-toggle').addEventListener('click', () => {
+      window.showPrepSettings = !window.showPrepSettings;
+      renderDailyView(container);
+    });
+
+    if (window.showPrepSettings) {
+      document.getElementById('btn-prep-save').addEventListener('click', () => {
+        const start = document.getElementById('prep-start-input').value;
+        const end = document.getElementById('prep-end-input').value;
+        if (start && end) {
+          localStorage.setItem('prep_start_date', start);
+          localStorage.setItem('prep_end_date', end);
+          window.showPrepSettings = false;
+          renderDailyView(container);
+        }
+      });
+    }
 
     window.updatePomo = async (habitId, newValue) => {
       if (newValue < 0) newValue = 0;
