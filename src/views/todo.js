@@ -1,8 +1,15 @@
 import { supabase } from '../supabase.js';
-import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, parseISO, isWithinInterval } from 'date-fns';
+import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 import Chart from 'chart.js/auto';
 
 let charts = [];
+
+// Helper to parse date string (YYYY-MM-DD) as local timezone Date object
+function parseLocalDate(dateStr) {
+  if (!dateStr) return new Date();
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
 
 export async function renderTodoView(container) {
   const token = localStorage.getItem('ticktick_access_token');
@@ -80,7 +87,7 @@ export async function renderTodoView(container) {
         </div>
 
         <div id="local-todo-dashboard">
-          <div style="display:flex; justify-content:center; padding:20px;">Loading tasks...</div>
+          <div style="display:flex;justify-content:center;padding:20px;">Loading tasks...</div>
         </div>
       </div>
     `;
@@ -131,19 +138,19 @@ export async function renderTodoView(container) {
     const weekEnd = endOfWeek(new Date(), { weekStartsOn: 1 });
 
     const todayTasks = tasks.filter(t => {
-      const due = parseISO(t.due_date);
+      const due = parseLocalDate(t.due_date);
       return t.list_name === 'Today' || isWithinInterval(due, { start: todayStart, end: todayEnd });
     });
 
     const weekTasks = tasks.filter(t => {
-      const due = parseISO(t.due_date);
+      const due = parseLocalDate(t.due_date);
       return t.list_name === 'This Week' || isWithinInterval(due, { start: weekStart, end: weekEnd });
     });
 
     const inboxTasks = tasks.filter(t => t.list_name === 'Inbox');
     
     const scheduledTasks = tasks.filter(t => {
-      const due = parseISO(t.due_date);
+      const due = parseLocalDate(t.due_date);
       return t.list_name === 'Scheduled' || (due > todayEnd && !t.completed);
     });
 
@@ -177,7 +184,7 @@ export async function renderTodoView(container) {
             <div class="todo-task-title">${t.title}</div>
             <div class="todo-task-details">
               <span class="todo-task-tag">Local</span>
-              <span class="todo-task-due">📅 Due: ${format(parseISO(t.due_date), 'MMM d, yyyy')}${timeStr}</span>
+              <span class="todo-task-due">📅 Due: ${format(parseLocalDate(t.due_date), 'MMM d, yyyy')}${timeStr}</span>
             </div>
           </div>
           <button class="delete-btn" onclick="deleteLocalTask('${t.id}')">🗑️</button>
