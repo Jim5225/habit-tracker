@@ -1,5 +1,5 @@
 import { supabase } from '../supabase.js';
-import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, parseISO, isWithinInterval, addDays } from 'date-fns';
+import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, parseISO, isWithinInterval } from 'date-fns';
 import Chart from 'chart.js/auto';
 
 let charts = [];
@@ -10,16 +10,13 @@ export async function renderTodoView(container) {
   const storedClientSecret = localStorage.getItem('ticktick_client_secret') || '';
   const storedRedirectUri = localStorage.getItem('ticktick_redirect_uri') || window.location.origin + '/';
   
-  // Track active tab: today, week, inbox, scheduled
   let activeFilter = localStorage.getItem('todo_active_filter') || 'today';
   let showConnectForm = false;
 
   async function loadData() {
     if (token) {
-      // Load from TickTick
       await loadTickTickDashboard();
     } else {
-      // Load from local Supabase database
       await loadLocalDashboard();
     }
   }
@@ -74,6 +71,10 @@ export async function renderTodoView(container) {
               <label>Due Date</label>
               <input type="date" id="local-task-date" value="${format(new Date(), 'yyyy-MM-dd')}" required>
             </div>
+            <div class="input-group" style="flex:1; margin-bottom:0;">
+              <label>Time (Optional)</label>
+              <input type="time" id="local-task-time">
+            </div>
             <button type="submit">Add Task</button>
           </form>
         </div>
@@ -108,16 +109,17 @@ export async function renderTodoView(container) {
       const title = document.getElementById('local-task-title').value.trim();
       const list_name = document.getElementById('local-task-list').value;
       const due_date = document.getElementById('local-task-date').value;
+      const task_time = document.getElementById('local-task-time').value || null;
 
       await supabase.from('local_todo_tasks').insert({
         title,
         list_name,
-        due_date
+        due_date,
+        task_time
       });
       loadData();
     });
 
-    // Load tasks from Supabase
     const { data: tasks } = await supabase.from('local_todo_tasks').select('*');
     renderLocalTasksList(tasks || []);
   }
@@ -128,7 +130,6 @@ export async function renderTodoView(container) {
     const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
     const weekEnd = endOfWeek(new Date(), { weekStartsOn: 1 });
 
-    // Filter local tasks
     const todayTasks = tasks.filter(t => {
       const due = parseISO(t.due_date);
       return t.list_name === 'Today' || isWithinInterval(due, { start: todayStart, end: todayEnd });
@@ -146,7 +147,6 @@ export async function renderTodoView(container) {
       return t.list_name === 'Scheduled' || (due > todayEnd && !t.completed);
     });
 
-    // Stats calculations
     const totalCount = tasks.length;
     const completedCount = tasks.filter(t => t.completed).length;
     const pendingCount = totalCount - completedCount;
@@ -159,24 +159,34 @@ export async function renderTodoView(container) {
     else if (activeFilter === 'inbox') filtered = inboxTasks;
     else if (activeFilter === 'scheduled') filtered = scheduledTasks;
 
-    const tasksHtml = filtered.map(t => `
-      <div class="todo-task-item ${t.completed ? 'completed' : ''}">
-        <input type="checkbox" class="todo-task-checkbox" ${t.completed ? 'checked' : ''} 
-          onclick="toggleLocalTask('${t.id}', ${!t.completed})">
-        <div class="todo-task-content">
-          <div class="todo-task-title">${t.title}</div>
-          <div class="todo-task-details">
-            <span class="todo-task-tag">Local</span>
-            <span class="todo-task-due">📅 Due: ${format(parseISO(t.due_date), 'MMM d, yyyy')}</span>
+    const tasksHtml = filtered.map(t => {
+      let timeStr = '';
+      if (t.task_time) {
+        const parts = t.task_time.split(':');
+        const h = parseInt(parts[0]);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const dispH = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+        timeStr = ` ⏰ ${dispH}:${parts[1]} ${ampm}`;
+      }
+
+      return `
+        <div class="todo-task-item ${t.completed ? 'completed' : ''}">
+          <input type="checkbox" class="todo-task-checkbox" ${t.completed ? 'checked' : ''} 
+            onclick="toggleLocalTask('${t.id}', ${!t.completed})">
+          <div class="todo-task-content">
+            <div class="todo-task-title">${t.title}</div>
+            <div class="todo-task-details">
+              <span class="todo-task-tag">Local</span>
+              <span class="todo-task-due">📅 Due: ${format(parseISO(t.due_date), 'MMM d, yyyy')}${timeStr}</span>
+            </div>
           </div>
+          <button class="delete-btn" onclick="deleteLocalTask('${t.id}')">🗑️</button>
         </div>
-        <button class="delete-btn" onclick="deleteLocalTask('${t.id}')">🗑️</button>
-      </div>
-    `).join('');
+      `;
+    }).join('');
 
     const dashboardEl = document.getElementById('local-todo-dashboard');
     dashboardEl.innerHTML = `
-      <!-- Stats Row -->
       <div class="budget-summary-grid">
         <div class="card summary-card">
           <h3>Completion Rate</h3>
@@ -196,7 +206,6 @@ export async function renderTodoView(container) {
       </div>
 
       <div class="grid-2" style="align-items: start;">
-        <!-- Filters & Tasks -->
         <div class="card">
           <div class="todo-filters">
             <button class="todo-filter-btn ${activeFilter === 'today' ? 'active' : ''}" data-filter="today">Today (${todayTasks.length})</button>
@@ -209,7 +218,6 @@ export async function renderTodoView(container) {
           </div>
         </div>
 
-        <!-- Doughnut Graph -->
         <div class="card" style="text-align: center;">
           <h2>Task Metrics Overview</h2>
           <div style="max-height: 250px; display:flex; justify-content:center; margin-top: 24px;">
@@ -219,7 +227,6 @@ export async function renderTodoView(container) {
       </div>
     `;
 
-    // Hook filters
     const filterBtns = dashboardEl.querySelectorAll('.todo-filter-btn');
     filterBtns.forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -231,7 +238,6 @@ export async function renderTodoView(container) {
 
     renderChart(completedCount, pendingCount);
 
-    // Helpers
     window.toggleLocalTask = async (id, comp) => {
       await supabase.from('local_todo_tasks').update({ completed: comp }).eq('id', id);
       loadData();

@@ -28,7 +28,9 @@ export async function renderDailyView(container) {
     const { data: pomoLogs } = await supabase.from('pomo_logs').select('*').eq('log_date', today);
     const { data: checkHabits } = await supabase.from('checkbox_habits').select('*').eq('is_active', true).order('sort_order');
     const { data: checkLogs } = await supabase.from('checkbox_logs').select('*').eq('log_date', today);
-    const { data: dailyTasks } = await supabase.from('daily_tasks').select('*').eq('log_date', today);
+    
+    // Fetch unified tasks from local_todo_tasks
+    const { data: localTodoTasks } = await supabase.from('local_todo_tasks').select('*').eq('due_date', today);
 
     // Fetch TickTick tasks if connected
     let tickTickTasks = [];
@@ -124,26 +126,26 @@ export async function renderDailyView(container) {
 
     // --- Sort Planner Tasks ---
     const allPlannerTasks = [
-      ...(dailyTasks || []).map(t => ({ ...t, isTickTick: false })),
+      ...(localTodoTasks || []).map(t => ({ ...t, isTickTick: false })),
       ...tickTickTasks
     ];
 
     const morningTasks = [];
     const noonTasks = [];
     const nightTasks = [];
+    const untimedTasks = [];
 
     allPlannerTasks.forEach(task => {
       let timeStr = '';
-      let hour = 12;
+      let hour = -1;
 
       if (task.isTickTick) {
         const dateObj = parseISO(task.dueDate);
         hour = dateObj.getHours();
         timeStr = format(dateObj, 'hh:mm a');
-      } else {
+      } else if (task.task_time) {
         const timeParts = task.task_time.split(':');
         hour = parseInt(timeParts[0]);
-        // format local time string
         const ampm = hour >= 12 ? 'PM' : 'AM';
         const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
         timeStr = `${displayHour}:${timeParts[1]} ${ampm}`;
@@ -151,7 +153,9 @@ export async function renderDailyView(container) {
 
       const taskWithTimeStr = { ...task, timeDisplay: timeStr };
 
-      if (hour >= 5 && hour < 12) {
+      if (hour === -1) {
+        untimedTasks.push(taskWithTimeStr);
+      } else if (hour >= 5 && hour < 12) {
         morningTasks.push(taskWithTimeStr);
       } else if (hour >= 12 && hour < 17) {
         noonTasks.push(taskWithTimeStr);
@@ -168,7 +172,7 @@ export async function renderDailyView(container) {
           <span>${t.title} ${t.isTickTick ? '<span style="font-size:10px; color:var(--accent-cyan); font-weight:bold;">(TickTick)</span>' : ''}</span>
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
-          <span class="planner-task-time">${t.timeDisplay}</span>
+          ${t.timeDisplay ? `<span class="planner-task-time">${t.timeDisplay}</span>` : ''}
           ${!t.isTickTick ? `<button onclick="deleteDailyTask('${t.id}')" class="delete-btn" style="padding:0; margin:0;">🗑️</button>` : ''}
         </div>
       </div>
@@ -250,7 +254,17 @@ export async function renderDailyView(container) {
           </div>
         </div>
 
-        <!-- Add Planner Task Card -->
+        <!-- All Day Tasks / Untimed Tasks -->
+        ${untimedTasks.length > 0 ? `
+          <div class="card" style="margin-bottom: 24px;">
+            <h3>📋 All Day / Untimed Tasks</h3>
+            <div style="margin-top: 12px;">
+              ${untimedTasks.map(renderPlannerItem).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Add Planner Task Card (Saves to unified local_todo_tasks) -->
         <div class="card" style="margin-bottom: 40px;">
           <h3>Add Task to Planner</h3>
           <form id="add-planner-task-form" style="display:flex; gap:16px; align-items:flex-end; margin-top:12px;">
@@ -259,8 +273,8 @@ export async function renderDailyView(container) {
               <input type="text" id="planner-title" placeholder="e.g. Study BCS, Gym" required>
             </div>
             <div class="input-group" style="flex:1; margin-bottom:0;">
-              <label>Scheduled Time</label>
-              <input type="time" id="planner-time" required>
+              <label>Scheduled Time (Optional)</label>
+              <input type="time" id="planner-time">
             </div>
             <button type="submit">Add Task</button>
           </form>
@@ -300,23 +314,24 @@ export async function renderDailyView(container) {
     document.getElementById('add-planner-task-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const title = document.getElementById('planner-title').value.trim();
-      const task_time = document.getElementById('planner-time').value;
+      const task_time = document.getElementById('planner-time').value || null;
 
-      await supabase.from('daily_tasks').insert({
+      await supabase.from('local_todo_tasks').insert({
         title,
         task_time,
-        log_date: today
+        due_date: today,
+        list_name: 'Today'
       });
       renderDailyView(container);
     });
 
     window.toggleDailyTask = async (id, isCompleted) => {
-      await supabase.from('daily_tasks').update({ completed: isCompleted }).eq('id', id);
+      await supabase.from('local_todo_tasks').update({ completed: isCompleted }).eq('id', id);
       renderDailyView(container);
     };
 
     window.deleteDailyTask = async (id) => {
-      await supabase.from('daily_tasks').delete().eq('id', id);
+      await supabase.from('local_todo_tasks').delete().eq('id', id);
       renderDailyView(container);
     };
 
