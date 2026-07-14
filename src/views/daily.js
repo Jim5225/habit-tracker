@@ -236,11 +236,6 @@ export async function renderDailyView(container) {
           </form>
         </div>
         
-        <h2>Pomodoro Habits</h2>
-        <div class="grid-3" style="margin-bottom: 40px;">
-          ${pomoHtml}
-        </div>
-
         <h2>Daily Checkboxes</h2>
         <div style="display:flex; flex-direction:column; gap:12px; max-width:600px;">
           ${checkHtml}
@@ -288,16 +283,6 @@ export async function renderDailyView(container) {
 
     window.deleteDailyTask = async (id) => {
       await supabase.from('local_todo_tasks').delete().eq('id', id);
-      renderDailyView(container);
-    };
-
-    window.updatePomo = async (habitId, newValue) => {
-      if (newValue < 0) newValue = 0;
-      await supabase.from('pomo_logs').upsert({
-        habit_id: habitId,
-        log_date: today,
-        completed: newValue
-      }, { onConflict: 'habit_id,log_date' });
       renderDailyView(container);
     };
 

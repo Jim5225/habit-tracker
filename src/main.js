@@ -56,6 +56,9 @@ function loadView(view) {
     case 'followup':
       renderFollowUpView(app);
       break;
+    case 'pomo':
+      renderPomoView(app);
+      break;
     case 'todo':
       renderTodoView(app);
       break;
