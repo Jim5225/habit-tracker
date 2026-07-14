@@ -65,29 +65,27 @@ export async function renderPomoView(container) {
     }
 
     container.innerHTML = `
-      <div class="view-container" style="display:flex; flex-direction:column; align-items:center;">
-        <h1 style="font-size:32px; margin-bottom: 8px;">🍅 Pomodoro Timer</h1>
-        <p class="subtitle" style="margin-bottom: 32px;">Grow your focus tree</p>
+      <div class="view-container" style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height: 85vh;">
         
-        <div class="card" style="width: 100%; max-width: 600px; padding: 40px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);">
+        <div style="width: 100%; max-width: 800px; display: flex; flex-direction: column; align-items: center;">
           
-          <div style="display:flex; gap:12px; margin-bottom:24px;">
-            <button class="mode-btn ${timerMode === 'focus' ? 'active' : ''}" data-mode="focus" style="padding: 8px 16px; font-weight:700; box-shadow:none;">Focus (25m)</button>
-            <button class="mode-btn ${timerMode === 'short_break' ? 'active' : ''}" data-mode="short_break" style="padding: 8px 16px; font-weight:700; box-shadow:none;">Short Break (5m)</button>
-            <button class="mode-btn ${timerMode === 'long_break' ? 'active' : ''}" data-mode="long_break" style="padding: 8px 16px; font-weight:700; box-shadow:none;">Long Break (15m)</button>
+          <div style="display:flex; gap:16px; margin-bottom:32px;">
+            <button class="mode-btn ${timerMode === 'focus' ? 'active' : ''}" data-mode="focus" style="padding: 12px 24px; font-size:18px; font-weight:700; box-shadow:none;">Focus (25m)</button>
+            <button class="mode-btn ${timerMode === 'short_break' ? 'active' : ''}" data-mode="short_break" style="padding: 12px 24px; font-size:18px; font-weight:700; box-shadow:none;">Short Break (5m)</button>
+            <button class="mode-btn ${timerMode === 'long_break' ? 'active' : ''}" data-mode="long_break" style="padding: 12px 24px; font-size:18px; font-weight:700; box-shadow:none;">Long Break (15m)</button>
           </div>
 
-          <div class="input-group" style="margin-bottom: 24px; width: 100%; max-width: 300px; display: ${timerMode === 'focus' ? 'block' : 'none'};">
-            <select id="pomo-category-select" style="padding:10px; font-size:16px; border-radius:8px; width: 100%;">
-              ${pomoHabits.map(h => `<option value="${h.id}" ${h.id === selectedCategory ? 'selected' : ''}>Work on: ${h.name}</option>`).join('')}
+          <div class="input-group" style="margin-bottom: 40px; width: 100%; max-width: 500px; display: ${timerMode === 'focus' ? 'block' : 'none'};">
+            <select id="pomo-category-select" style="padding:16px; font-size:20px; border-radius:12px; width: 100%; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+              ${pomoHabits.map(h => `<option value="${h.id}" ${h.id === selectedCategory ? 'selected' : ''}>${h.name}</option>`).join('')}
             </select>
           </div>
 
-          <!-- GIANT TREE BOX -->
-          <div class="giant-tree-box" style="margin-bottom: 24px; display: flex; flex-direction: column; align-items: center;">
-            <svg viewBox="0 0 100 100" width="300" height="300" id="pomodoro-tree-svg">
+          <!-- MASSIVE TREE BOX -->
+          <div style="margin-bottom: 40px; display: flex; flex-direction: column; align-items: center; width: 100%;">
+            <svg viewBox="0 0 100 100" width="500" height="500" id="pomodoro-tree-svg" style="filter: drop-shadow(0 20px 30px rgba(16, 185, 129, 0.3)); overflow:visible;">
               <!-- Ground -->
-              <path d="M 10 90 Q 50 85 90 90 L 90 95 L 10 95 Z" fill="#8B5A2B" />
+              <path d="M 0 90 Q 50 82 100 90 L 100 100 L 0 100 Z" fill="#8B5A2B" />
               <!-- Seed -->
               <circle cx="50" cy="88" r="3" fill="#D2B48C" id="tree-seed" style="opacity:0;" />
               <!-- Sprout / Stem -->
@@ -95,37 +93,37 @@ export async function renderPomoView(container) {
               <path d="M 50 72 Q 44 68 42 72 Q 46 75 50 72" fill="#10B981" id="tree-leaf-left" style="opacity:0;" />
               <path d="M 50 73 Q 56 69 58 73 Q 54 75 50 73" fill="#10B981" id="tree-leaf-right" style="opacity:0;" />
               <!-- Trunk -->
-              <path d="M 47 90 L 49 55 L 51 55 L 53 90 Z" fill="#5C4033" id="tree-trunk" style="opacity:0;" />
+              <path d="M 46 90 L 49 50 L 51 50 L 54 90 Z" fill="#5C4033" id="tree-trunk" style="opacity:0;" />
               <!-- Canopy -->
-              <circle cx="50" cy="46" r="14" fill="#10B981" id="tree-canopy" style="opacity:0;" />
-              <circle cx="43" cy="42" r="10" fill="#059669" id="tree-canopy-left" style="opacity:0;" />
-              <circle cx="57" cy="42" r="10" fill="#047857" id="tree-canopy-right" style="opacity:0;" />
+              <circle cx="50" cy="40" r="18" fill="#10B981" id="tree-canopy" style="opacity:0;" />
+              <circle cx="38" cy="46" r="14" fill="#059669" id="tree-canopy-left" style="opacity:0;" />
+              <circle cx="62" cy="46" r="14" fill="#047857" id="tree-canopy-right" style="opacity:0;" />
               <!-- Fruits -->
-              <circle cx="45" cy="44" r="2" fill="#EF4444" id="tree-fruit-1" style="opacity:0;" />
-              <circle cx="55" cy="40" r="2" fill="#EF4444" id="tree-fruit-2" style="opacity:0;" />
-              <circle cx="50" cy="50" r="2" fill="#EF4444" id="tree-fruit-3" style="opacity:0;" />
+              <circle cx="45" cy="35" r="3" fill="#EF4444" id="tree-fruit-1" style="opacity:0;" />
+              <circle cx="58" cy="38" r="3" fill="#EF4444" id="tree-fruit-2" style="opacity:0;" />
+              <circle cx="50" cy="48" r="3" fill="#EF4444" id="tree-fruit-3" style="opacity:0;" />
               <!-- Watering Can (shown during break) -->
-              <g id="watering-can" style="opacity:0; transform: translate(45px, 10px) rotate(-25deg);">
+              <g id="watering-can" style="opacity:0; transform: translate(35px, 0px) rotate(-25deg) scale(1.5);">
                 <path d="M 10 15 L 22 15 L 22 25 L 10 25 Z" fill="#0EA5E9" />
                 <path d="M 22 18 L 28 14 L 29 16 L 22 21" fill="#0EA5E9" stroke="#0EA5E9" stroke-width="0.8" />
                 <path d="M 10 17 C 7 17 7 23 10 23" stroke="#0EA5E9" stroke-width="1.5" fill="none" />
               </g>
               <!-- Water drops -->
-              <g id="water-drops" style="opacity:0;">
+              <g id="water-drops" style="opacity:0; transform: translate(35px, 0px) scale(1.5);">
                 <circle cx="28" cy="22" r="0.8" fill="#38BDF8" class="water-drip water-drip-1" />
                 <circle cx="29" cy="25" r="0.9" fill="#38BDF8" class="water-drip water-drip-2" />
                 <circle cx="27" cy="28" r="0.7" fill="#38BDF8" class="water-drip water-drip-3" />
               </g>
             </svg>
-            <div id="tree-stage-label" class="tree-stage-label" style="font-size:18px; margin-top:16px;">Planted Seed</div>
+            <div id="tree-stage-label" class="tree-stage-label" style="font-size:24px; font-weight:600; color:var(--text-secondary); margin-top:24px;">Planted Seed</div>
           </div>
 
-          <div id="pomo-time-display" style="font-size: 64px; font-weight: 800; color: var(--text-primary); font-family: monospace; letter-spacing: 2px;">25:00</div>
+          <div id="pomo-time-display" style="font-size: 110px; font-weight: 900; color: var(--text-primary); font-family: monospace; letter-spacing: 4px; line-height: 1;">25:00</div>
           
-          <div style="display:flex; gap:16px; margin-top:24px;">
-            <button id="pomo-btn-start" style="padding: 12px 32px; font-size: 18px; background:linear-gradient(135deg, var(--accent-green), #059669); box-shadow:0 4px 15px rgba(16, 185, 129, 0.3);">Start</button>
-            <button id="pomo-btn-pause" style="padding: 12px 32px; font-size: 18px; background:linear-gradient(135deg, var(--accent-orange), #ea580c); display:none; box-shadow:0 4px 15px rgba(249, 115, 22, 0.3);">Pause</button>
-            <button id="pomo-btn-reset" style="padding: 12px 32px; font-size: 18px; background:#f1f5f9; color:var(--text-primary); border:1px solid var(--border-color);">Reset</button>
+          <div style="display:flex; gap:24px; margin-top:40px;">
+            <button id="pomo-btn-start" style="padding: 20px 60px; font-size: 24px; font-weight: 800; border-radius: 50px; background:linear-gradient(135deg, var(--accent-green), #059669); box-shadow:0 10px 25px rgba(16, 185, 129, 0.4);">Start Focus</button>
+            <button id="pomo-btn-pause" style="padding: 20px 60px; font-size: 24px; font-weight: 800; border-radius: 50px; background:linear-gradient(135deg, var(--accent-orange), #ea580c); display:none; box-shadow:0 10px 25px rgba(249, 115, 22, 0.4);">Pause</button>
+            <button id="pomo-btn-reset" style="padding: 20px 40px; font-size: 20px; font-weight: 600; border-radius: 50px; background:#f1f5f9; color:var(--text-primary); border:2px solid var(--border-color);">Reset</button>
           </div>
         </div>
       </div>
