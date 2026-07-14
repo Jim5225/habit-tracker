@@ -7,9 +7,22 @@ import { renderCalendarView } from './views/calendar.js';
 import { renderBudgetView } from './views/budget.js';
 import { renderFollowUpView } from './views/followup.js';
 import { renderTodoView } from './views/todo.js';
+import { renderPomoView } from './views/pomo.js';
 
 const app = document.getElementById('app-view');
 const navLinks = document.querySelectorAll('.nav-links a');
+
+const routes = {
+  daily: renderDailyView,
+  weekly: renderWeeklyView,
+  monthly: renderMonthlyView,
+  analytics: renderAnalyticsView,
+  calendar: renderCalendarView,
+  budget: renderBudgetView,
+  followup: renderFollowUpView,
+  todo: renderTodoView,
+  pomo: renderPomoView,
+};
 
 function loadView(view) {
   app.innerHTML = '<div style="display:flex;justify-content:center;padding:40px;">Loading...</div>';
