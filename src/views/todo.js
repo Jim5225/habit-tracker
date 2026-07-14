@@ -444,7 +444,7 @@ export async function renderTodoView(container) {
       options: {
         responsive: true,
         plugins: {
-          legend: { position: 'bottom', labels: { color: '#f3f4f6' } }
+          legend: { position: 'bottom', labels: { color: '#0f172a' } }
         }
       }
     }));

@@ -322,10 +322,10 @@ export async function renderBudgetView(container) {
       options: {
         responsive: true,
         scales: {
-          x: { ticks: { color: '#9ca3af' } },
-          y: { ticks: { color: '#9ca3af' } }
+          x: { ticks: { color: '#64748b' }, grid: { color: '#e2e8f0' } },
+          y: { ticks: { color: '#64748b' }, grid: { color: '#e2e8f0' } }
         },
-        plugins: { legend: { labels: { color: '#f3f4f6' } } }
+        plugins: { legend: { labels: { color: '#0f172a' } } }
       }
     }));
 
@@ -356,7 +356,7 @@ export async function renderBudgetView(container) {
       options: {
         responsive: true,
         plugins: {
-          legend: { position: 'right', labels: { color: '#f3f4f6', boxWidth: 12 } }
+          legend: { position: 'right', labels: { color: '#0f172a', boxWidth: 12 } }
         }
       }
     }));

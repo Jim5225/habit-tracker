@@ -67,16 +67,18 @@ export async function renderWeeklyView(container) {
         scales: {
           x: { 
             stacked: true,
-            ticks: { color: '#9ca3af' }
+            ticks: { color: '#64748b' },
+            grid: { color: '#e2e8f0' }
           },
           y: { 
             stacked: true,
-            ticks: { color: '#9ca3af' }
+            ticks: { color: '#64748b' },
+            grid: { color: '#e2e8f0' }
           }
         },
         plugins: {
           legend: {
-            labels: { color: '#f3f4f6' }
+            labels: { color: '#0f172a' }
           }
         }
       }
