@@ -737,6 +737,57 @@ button:active { transform: translateY(0); }
   color: var(--text-secondary);
 }
 
+/* Pomodoro Timer and Tree Styles */
+.pomo-container {
+  display: grid;
+  grid-template-columns: 1fr 180px;
+  gap: 24px;
+  align-items: center;
+}
+
+.tree-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(248, 250, 252, 0.6);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 16px;
+  height: 100%;
+}
+
+.tree-stage-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  margin-top: 8px;
+}
+
+/* Water fall animations for break stage */
+@keyframes drip {
+  0% { transform: translateY(-5px); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateY(35px); opacity: 0; }
+}
+
+.water-drip {
+  animation: drip 1.2s infinite linear;
+}
+
+.water-drip-1 { animation-delay: 0s; }
+.water-drip-2 { animation-delay: 0.4s; }
+.water-drip-3 { animation-delay: 0.8s; }
+
+/* Tree elements transition */
+#tree-seed, #tree-sprout, #tree-leaf-left, #tree-leaf-right, 
+#tree-trunk, #tree-canopy, #tree-canopy-left, #tree-canopy-right,
+#tree-fruit-1, #tree-fruit-2, #tree-fruit-3, #watering-can, #water-drops {
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  transform-origin: bottom center;
+}
+
 select option {
   background: #ffffff;
   color: var(--text-primary);
