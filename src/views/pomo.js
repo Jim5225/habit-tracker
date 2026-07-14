@@ -8,6 +8,7 @@ export async function renderPomoView(container) {
   let timerMode = localStorage.getItem('pomo_mode') || 'focus'; 
   let selectedCategory = localStorage.getItem('pomo_selected_category') || '';
   let duration = getDurationForMode(timerMode); 
+  let pipWindow = null;
   
   let remainingTime = duration;
   if (timerState === 'paused') {
@@ -68,14 +69,12 @@ export async function renderPomoView(container) {
         
         <div style="width: 100%; max-width: 600px; display: flex; flex-direction: column; align-items: center;">
           
-          <!-- ONLY CATEGORY DROPDOWN -->
           <div class="input-group" style="margin-bottom: 20px; width: 100%; display: ${timerMode === 'focus' ? 'block' : 'none'};">
             <select id="pomo-category-select" style="padding:16px; font-size:24px; font-weight: bold; border-radius:12px; width: 100%; text-align: center; border: 2px solid var(--border-color); background: var(--card-bg); color: var(--text-primary); cursor: pointer;">
               ${pomoHabits.map(h => `<option value="${h.id}" ${h.id === selectedCategory ? 'selected' : ''}>${h.name}</option>`).join('')}
             </select>
           </div>
 
-          <!-- MASSIVE CONTINUOUS GROWTH TREE -->
           <div style="margin-bottom: 10px; display: flex; flex-direction: column; align-items: center; width: 100%; position: relative;">
             <svg viewBox="0 0 100 100" width="100%" height="450" id="pomodoro-tree-svg" style="max-width: 500px; filter: drop-shadow(0 20px 30px rgba(16, 185, 129, 0.3)); overflow:visible;">
               <defs>
@@ -90,30 +89,24 @@ export async function renderPomoView(container) {
                   }
                 </style>
               </defs>
-              <!-- Ground -->
               <path d="M -10 90 Q 50 82 110 90 L 110 100 L -10 100 Z" fill="#8B5A2B" />
               
-              <!-- Seed (Opacates initially) -->
               <circle cx="50" cy="88" r="3" fill="#D2B48C" id="tree-seed" class="grow-element" style="opacity:0;" />
               
-              <!-- Sprout (Scales up early) -->
               <g id="tree-sprout-group" class="grow-element" style="opacity:0;">
                 <path d="M 50 88 Q 48 80 50 72" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" fill="none" />
                 <path d="M 50 72 Q 44 68 42 72 Q 46 75 50 72" fill="#10B981" />
                 <path d="M 50 73 Q 56 69 58 73 Q 54 75 50 73" fill="#10B981" />
               </g>
 
-              <!-- Mature Tree Trunk (Scales up from base) -->
               <path d="M 46 90 L 49 40 L 51 40 L 54 90 Z" fill="#5C4033" id="tree-trunk" class="grow-element" style="opacity:0;" />
               
-              <!-- Canopy (Scales up from top of trunk) -->
               <g id="tree-canopy-group" class="grow-element" style="opacity:0; transform-origin: 50px 40px;">
                 <circle cx="50" cy="35" r="22" fill="#10B981" />
                 <circle cx="35" cy="45" r="16" fill="#059669" />
                 <circle cx="65" cy="45" r="16" fill="#047857" />
               </g>
               
-              <!-- Fruits (Pop in at the end) -->
               <g id="tree-fruits-group" style="opacity:0;">
                 <circle cx="45" cy="25" r="3.5" fill="#EF4444" class="fruit-element" style="transform-origin: 45px 25px;" />
                 <circle cx="62" cy="35" r="3.5" fill="#EF4444" class="fruit-element" style="transform-origin: 62px 35px;" />
@@ -122,7 +115,6 @@ export async function renderPomoView(container) {
                 <circle cx="28" cy="48" r="3.5" fill="#EF4444" class="fruit-element" style="transform-origin: 28px 48px;" />
               </g>
 
-              <!-- Break Mode: Watering Can -->
               <g id="watering-can" style="opacity:0; transform-origin: center center; transform: translate(35px, 0px) rotate(-25deg) scale(1.5);">
                 <path d="M 10 15 L 22 15 L 22 25 L 10 25 Z" fill="#0EA5E9" />
                 <path d="M 22 18 L 28 14 L 29 16 L 22 21" fill="#0EA5E9" stroke="#0EA5E9" stroke-width="0.8" />
@@ -139,12 +131,15 @@ export async function renderPomoView(container) {
             <div id="pomo-time-display" style="font-size: 110px; font-weight: 900; color: var(--text-primary); font-family: monospace; letter-spacing: 2px; line-height: 1; margin-top: -20px; z-index: 10;">25:00</div>
           </div>
           
-          <!-- START / STOP BUTTONS ONLY -->
           <div style="display:flex; gap:16px; margin-top:20px; width: 100%;">
             <button id="pomo-btn-start" style="flex: 2; padding: 24px; font-size: 28px; font-weight: 800; border-radius: 24px; background:linear-gradient(135deg, var(--accent-green), #059669); color: white; box-shadow:0 10px 25px rgba(16, 185, 129, 0.4); border:none; cursor:pointer;">START POMODORO</button>
             <button id="pomo-btn-pause" style="flex: 2; padding: 24px; font-size: 28px; font-weight: 800; border-radius: 24px; background:linear-gradient(135deg, var(--accent-orange), #ea580c); color: white; display:none; box-shadow:0 10px 25px rgba(249, 115, 22, 0.4); border:none; cursor:pointer;">PAUSE</button>
             <button id="pomo-btn-break" style="flex: 1; padding: 24px; font-size: 24px; font-weight: 700; border-radius: 24px; background:#f1f5f9; color:var(--text-primary); border:2px solid var(--border-color); cursor:pointer;">Break (5m)</button>
           </div>
+
+          <button id="pomo-btn-mini" style="margin-top: 16px; padding: 12px 24px; font-size: 16px; border-radius: 12px; background: transparent; color: var(--text-secondary); border: 2px dashed var(--border-color); cursor:pointer; width:100%; transition:all 0.2s ease;">
+            🔲 Open Mini Mode (Always on Top)
+          </button>
         </div>
       </div>
     `;
@@ -157,12 +152,53 @@ export async function renderPomoView(container) {
     const btnStart = document.getElementById('pomo-btn-start');
     const btnPause = document.getElementById('pomo-btn-pause');
     const btnBreak = document.getElementById('pomo-btn-break');
+    const btnMini = document.getElementById('pomo-btn-mini');
     const selectCategory = document.getElementById('pomo-category-select');
 
     if (selectCategory) {
       selectCategory.addEventListener('change', (e) => {
         selectedCategory = e.target.value;
         localStorage.setItem('pomo_selected_category', selectedCategory);
+      });
+    }
+
+    if (btnMini) {
+      btnMini.addEventListener('click', async () => {
+        if (!('documentPictureInPicture' in window)) {
+          alert('Mini Mode is not supported by your browser. Please try Google Chrome or Microsoft Edge.');
+          return;
+        }
+
+        try {
+          if (pipWindow) return; // already open
+          
+          pipWindow = await window.documentPictureInPicture.requestWindow({
+            width: 320,
+            height: 200
+          });
+
+          // Provide basic styling since we can't easily deep clone all stylesheets cross-origin
+          const isDark = document.body.classList.contains('dark-theme');
+          const bg = isDark ? '#0f172a' : '#f8fafc';
+          const fg = isDark ? '#ffffff' : '#0f172a';
+          const sec = isDark ? '#94a3b8' : '#64748b';
+
+          pipWindow.document.body.innerHTML = `
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:${bg}; color:${fg}; font-family:monospace; margin:0; padding:0;">
+              <div style="font-size: 14px; font-family:sans-serif; color:${sec}; margin-bottom: 8px; font-weight:600;">🍅 HabitFlow Pomodoro</div>
+              <div id="mini-time-display" style="font-size: 64px; font-weight: 900; letter-spacing:2px; line-height:1;">${formatTime(remainingTime)}</div>
+              <div id="mini-status" style="font-size: 14px; font-family:sans-serif; color:${sec}; margin-top: 12px; text-transform:uppercase; font-weight:bold;">${timerState === 'running' ? 'Focusing...' : 'Paused'}</div>
+            </div>
+          `;
+
+          pipWindow.addEventListener('pagehide', () => {
+            pipWindow = null;
+          });
+
+        } catch (error) {
+          console.error('Failed to open PiP window', error);
+          alert('Failed to open Mini Mode. Ensure you have granted PiP permissions in your browser.');
+        }
       });
     }
 
@@ -271,6 +307,18 @@ export async function renderPomoView(container) {
         timeDisplay.innerText = formatTime(ms);
       }
       updateTreeGraphic();
+
+      if (pipWindow) {
+        const miniDisplay = pipWindow.document.getElementById('mini-time-display');
+        if (miniDisplay) miniDisplay.innerText = formatTime(ms);
+      }
+    }
+
+    function updateMiniStatus(status) {
+      if (pipWindow) {
+        const ms = pipWindow.document.getElementById('mini-status');
+        if (ms) ms.innerText = status;
+      }
     }
 
     async function handleTimerComplete() {
@@ -295,6 +343,7 @@ export async function renderPomoView(container) {
 
       timerState = 'idle';
       localStorage.setItem('pomo_state', 'idle');
+      updateMiniStatus('Idle');
       renderPomoView(container);
     }
 
@@ -308,6 +357,8 @@ export async function renderPomoView(container) {
       btnStart.style.display = 'none';
       btnPause.style.display = 'block';
       if(timerMode === 'focus') btnBreak.style.display = 'block';
+
+      updateMiniStatus('Focusing...');
 
       window.pomoIntervalId = setInterval(() => {
         const ms = target - Date.now();
@@ -330,6 +381,8 @@ export async function renderPomoView(container) {
       btnStart.style.display = 'block';
       btnStart.innerText = 'RESUME POMODORO';
       btnPause.style.display = 'none';
+
+      updateMiniStatus('Paused');
     }
 
     if (timerState === 'running') {
